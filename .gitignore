@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+output/
+.env
+.env.*
+!.env.example
+resources/config/*密钥*.env
+resources/config/*secret*.env
+run_logs/
