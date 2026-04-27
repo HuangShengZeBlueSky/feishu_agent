@@ -12,7 +12,9 @@ from src.workflows.mock_examples import (
     risk_and_weekly_insight,
     run_all_mock,
     schedule_meeting_mock,
+    simulate_agents_meeting,
 )
+from src.core.验收器 import run_xiaolongxia_acceptance
 from src.workflows.post_meeting_local import run_post_meeting_local
 
 
@@ -51,6 +53,11 @@ def build_parser() -> argparse.ArgumentParser:
     schedule.add_argument("--meeting-title", default="支付项目评审会")
     schedule.set_defaults(func=lambda args: print_json(schedule_meeting_mock(args.project_id, args.meeting_title)))
 
+    agents = subparsers.add_parser("simulate-agents-meeting", help="多智能体角色开会模拟")
+    agents.add_argument("--project-id", default="pay_project")
+    agents.add_argument("--meeting-title", default="支付项目评审会")
+    agents.set_defaults(func=lambda args: print_json(simulate_agents_meeting(args.project_id, args.meeting_title)))
+
     doc = subparsers.add_parser("document-preview", help="文档生成、更新与知识沉淀预览")
     doc.add_argument("--project-id", default="pay_project")
     doc.add_argument("--doc-type", default="post_meeting", choices=["post_meeting", "weekly"])
@@ -59,6 +66,10 @@ def build_parser() -> argparse.ArgumentParser:
     all_mock = subparsers.add_parser("run-all-mock", help="一次运行 6 个 mock 例子")
     all_mock.add_argument("--project-id", default="pay_project")
     all_mock.set_defaults(func=lambda args: print_json(run_all_mock(args.project_id)))
+
+    acceptance = subparsers.add_parser("validate-xiaolongxia", help="验收小龙虾当前 mock、OpenClaw、飞书 CLI 能力")
+    acceptance.add_argument("--project-id", default="pay_project")
+    acceptance.set_defaults(func=lambda args: print_json(run_xiaolongxia_acceptance(args.project_id)))
     return parser
 
 

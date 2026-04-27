@@ -6,4 +6,6 @@ output/
 !.env.example
 resources/config/*密钥*.env
 resources/config/*secret*.env
+resources/config/*secret*.json
+resources/config/*secret*.md
 run_logs/

@@ -53,17 +53,39 @@ class FeishuBitableAdapter:
         return str(data["tenant_access_token"])
 
     def _write_records(self, table_id: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+        allowed_fields = self._field_names(table_id)
         created = []
         for row in rows:
             data = self._request(
                 "POST",
                 f"/bitable/v1/apps/{self.settings.bitable_app_token}/tables/{table_id}/records",
-                body={"fields": row},
+                body={"fields": self._normalize_text_fields(row, allowed_fields)},
             )
             if data.get("code") != 0:
                 raise BitableWriteError(f"Failed to write Bitable record: {data}")
             created.append(data.get("data", {}))
         return {"count": len(created), "created": created}
+
+    def _field_names(self, table_id: str) -> set[str]:
+        data = self._request("GET", f"/bitable/v1/apps/{self.settings.bitable_app_token}/tables/{table_id}/fields?page_size=100")
+        if data.get("code") != 0:
+            raise BitableWriteError(f"Failed to read Bitable fields: {data}")
+        return {str(item.get("field_name")) for item in ((data.get("data") or {}).get("items") or []) if item.get("field_name")}
+
+    def _normalize_text_fields(self, row: dict[str, Any], allowed_fields: set[str]) -> dict[str, str]:
+        output: dict[str, str] = {}
+        for key, value in row.items():
+            if key not in allowed_fields:
+                continue
+            if value is None:
+                output[key] = ""
+            elif isinstance(value, bool):
+                output[key] = "true" if value else "false"
+            elif isinstance(value, (int, float)):
+                output[key] = str(value)
+            else:
+                output[key] = str(value)
+        return output
 
     def _request(self, method: str, path: str, *, body: dict[str, Any] | None = None, auth: bool = True) -> dict[str, Any]:
         url = self.settings.base_url + path
@@ -84,4 +106,3 @@ class FeishuBitableAdapter:
                 payload = {"raw": raw[:1000]}
             payload["_http_status"] = exc.code
             return payload
-

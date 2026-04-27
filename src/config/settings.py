@@ -23,6 +23,7 @@ class FeishuSettings:
     app_secret: str
     base_url: str
     bitable_app_token: str
+    context_table_id: str
     action_table_id: str
     decision_table_id: str
     risk_table_id: str
@@ -35,6 +36,7 @@ class FeishuSettings:
             app_secret=os.environ.get("FEISHU_APP_SECRET", ""),
             base_url=os.environ.get("FEISHU_BASE_URL", "https://open.larksuite.com/open-apis").rstrip("/"),
             bitable_app_token=os.environ.get("FEISHU_BITABLE_APP_TOKEN", ""),
+            context_table_id=os.environ.get("FEISHU_CONTEXT_TABLE_ID", ""),
             action_table_id=os.environ.get("FEISHU_ACTION_TABLE_ID", ""),
             decision_table_id=os.environ.get("FEISHU_DECISION_TABLE_ID", ""),
             risk_table_id=os.environ.get("FEISHU_RISK_TABLE_ID", ""),

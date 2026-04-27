@@ -186,6 +186,43 @@ def schedule_meeting_mock(project_id: str, meeting_title: str, *, mode: str = "m
     return {"file": str(path), "candidate_times": candidates[:3], "run_log": str(log)}
 
 
+def simulate_agents_meeting(project_id: str, meeting_title: str, *, mode: str = "mock") -> dict[str, Any]:
+    agents = read_json("sample_agents.json")
+    lines = [
+        f"# {meeting_title} 多智能体模拟会议",
+        "",
+        "说明：当前是 mock 模式，角色是模拟智能体，不是真实飞书用户。",
+        "",
+    ]
+    dialogue = [
+        ("项目经理", "今天目标是确认错误码文档、联调环境、验收材料负责人。"),
+        ("产品", "验收材料这周要准备好，不然下周客户评审会受影响。"),
+        ("后端", "错误码文档我还没整理，预计周五给。"),
+        ("前端", "我这边等错误码文档，文档完成后一天内可以完成联调。"),
+        ("测试", "联调环境今天又挂了，测试进度可能要延后。"),
+        ("项目经理", "结论：字段本周冻结；小王周五前补齐错误码；验收材料负责人需要今天确认。"),
+    ]
+    for role, text in dialogue:
+        lines.append(f"- **{role}**：{text}")
+    transcript = "\n".join(lines) + "\n"
+    path = Path("output/多智能体模拟会议.md")
+    path.write_text(transcript, encoding="utf-8")
+    extraction = extract_meeting_notes("\n".join(text for _, text in dialogue), project_id=project_id, source_url="mock://agents/meeting")
+    outputs = {
+        "file": str(path),
+        "agents": agents,
+        "counts": {
+            "action_items": len(extraction.action_items),
+            "decisions": len(extraction.decisions),
+            "risks": len(extraction.risks),
+        },
+        "note": "角色只填写 role/owner_text，不编造 owner_user_id。",
+    }
+    log = write_run_log(workflow="simulate-agents-meeting", mode=mode, inputs={"project_id": project_id, "meeting_title": meeting_title}, outputs=outputs, write_plan={"dry_run": True, "create_real_meeting": False})
+    outputs["run_log"] = str(log)
+    return outputs
+
+
 def document_preview(project_id: str, doc_type: str = "post_meeting", *, mode: str = "mock") -> dict[str, Any]:
     table = project_table()
     title = "支付项目会后总结" if doc_type == "post_meeting" else "支付项目周报与下周风险洞察"
@@ -216,6 +253,7 @@ def run_all_mock(project_id: str) -> dict[str, Any]:
         "3_reconcile": reconcile_project_table(project_id),
         "4_risk_weekly": risk_and_weekly_insight(project_id),
         "5_schedule": schedule_meeting_mock(project_id, "支付项目评审会"),
+        "5b_agents_meeting": simulate_agents_meeting(project_id, "支付项目评审会"),
         "6_document": document_preview(project_id),
     }
     path = Path("output/六个例子总览.json")

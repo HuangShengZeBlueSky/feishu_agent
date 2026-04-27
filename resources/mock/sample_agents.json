@@ -1,0 +1,28 @@
+[
+  {
+    "agent_id": "agent_pm",
+    "role": "项目经理",
+    "goal": "推进会议节奏，确认行动项、负责人、截止时间和风险"
+  },
+  {
+    "agent_id": "agent_product",
+    "role": "产品",
+    "goal": "确认验收材料、客户评审目标和业务优先级"
+  },
+  {
+    "agent_id": "agent_backend",
+    "role": "后端",
+    "goal": "交付错误码文档和联调环境"
+  },
+  {
+    "agent_id": "agent_frontend",
+    "role": "前端",
+    "goal": "基于接口文档完成联调"
+  },
+  {
+    "agent_id": "agent_qa",
+    "role": "测试",
+    "goal": "暴露联调环境和验收风险"
+  }
+]
+
