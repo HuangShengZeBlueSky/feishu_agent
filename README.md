@@ -1,32 +1,76 @@
 # 小龙虾项目上下文管家
 
-面向一个飞书项目群的上下文管理与行动项闭环助手。
+真实飞书数据 + LLM 的项目上下文、会议闭环和风险洞察工具。
 
-当前按 `spec.md` 的最新版执行：先用 mock 模式跑通 6 个例子，再逐步切到 feishu 模式。
+当前主路径已经从 `resources/mock` 切到真实飞书多维表格。缺少真实业务对象时，使用 `seed-real-project` 向真实飞书 Base 写入最小项目数据，不再从 mock 文件读取。
+
+## 当前主线
 
 ```text
-项目上下文清单 -> 会议/群聊/文档/任务/日历模拟数据 -> 卡片/表格/diff/文档预览 -> run_log
+真实飞书多维表格
+  -> LLM 结构化抽取/生成
+  -> 行动项、决策、风险、会前卡片、对账 diff、周报洞察、文档预览
+  -> run_logs 留痕
 ```
 
-## 先看进度
+## 初始化真实 Base
 
-见：[docs/项目进度.md](docs/项目进度.md)
-
-## 本地验收
+强制创建新的飞书多维表格和 4 张业务表：
 
 ```powershell
-python -m src.cli run-all-mock
+python tools\初始化飞书多维表格.py --force-new
 ```
 
-单独验收会后闭环：
+写入真实种子项目数据：
 
 ```powershell
-python -m src.cli post-meeting-local --minutes-file resources\mock\sample_minutes.txt --write-bitable --dry-run
+python -m src.cli seed-real-project --project-id pay_project
 ```
 
-真实写入前需要配置 `.env.example` 里的飞书凭证和表 ID，并去掉 `--dry-run`。真实密钥只放本地忽略文件，不写进仓库。
+## 运行示例
 
-## 总方向指南
-- 方向 A：周期性智能总结与洞察（偏管理与效能） - 场景描述：不再是简单的聊天 Bot，而是一个“团队效能周报生成器”。它能自动拉取团队本周在飞书中的核心文档修改、重要任务流转和会议决议，提炼成一份高信息密度的“每周工作总结与下周风险洞察”卡片，定时推送到部门群。 
-- 方向 B：会议与项目的全链路伴侣（偏协作与对齐） - 场景描述：围绕“开会”这一高频场景，能在会前基于日历邀请人，自动检索并推送“会前背景知识/历史文档卡片”；或在会后，自动抓取会议纪要中的 Action Items，直接转化为飞书任务并附带相关的知识库链接分发给执行人。 
-- 方向 D：团队待办中枢与进展自动对账（偏执行与闭环） - 场景描述：不只是分散记录待办的“收集器”，而是一个“团队重点事项追踪表自动维护器”。它能周期性地从飞书文档内容、文档评论、会议纪要、飞书任务等来源识别并汇总团队重点事项中的各类 Todo，自动整理进统一表格，补齐负责人、优先级、截止时间和关联背景链接；同时持续同步任务进展、最新状态和阻塞原因，帮助团队形成一份可追踪、可分派、可预警的“重点事项推进总表”。
+查看真实上下文：
+
+```powershell
+python -m src.cli context-overview --project-id pay_project
+```
+
+用 LLM 抽取会议行动项、决策和风险，并写入真实 Base：
+
+```powershell
+python -m src.cli post-meeting-real --project-id pay_project --write-bitable
+```
+
+生成会前背景卡片：
+
+```powershell
+python -m src.cli pre-meeting-card --project-id pay_project --meeting-title 支付项目评审会
+```
+
+生成项目推进对账 diff：
+
+```powershell
+python -m src.cli reconcile-project-table --project-id pay_project
+```
+
+生成风险巡检和周报洞察：
+
+```powershell
+python -m src.cli risk-weekly-insight --project-id pay_project
+```
+
+生成会议议程和日历依赖缺口：
+
+```powershell
+python -m src.cli schedule-meeting --project-id pay_project --meeting-title 支付项目评审会
+```
+
+生成文档预览：
+
+```powershell
+python -m src.cli document-preview --project-id pay_project --doc-type weekly
+```
+
+## 旧 mock 入口
+
+旧 mock 入口已经从 CLI 主路径移除，`resources/mock` 样例数据也已删除。

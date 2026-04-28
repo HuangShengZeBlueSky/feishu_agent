@@ -41,6 +41,82 @@ class FeishuBitableAdapter:
             "Project_Risks": self._write_records(self.settings.risk_table_id, records["Project_Risks"]),
         }
 
+    def read_table(self, table_id: str, *, page_size: int = 100) -> list[dict[str, Any]]:
+        missing = [
+            name
+            for name, value in {
+                "FEISHU_APP_ID": self.settings.app_id,
+                "FEISHU_APP_SECRET": self.settings.app_secret,
+                "FEISHU_BITABLE_APP_TOKEN": self.settings.bitable_app_token,
+            }.items()
+            if not value
+        ]
+        if missing:
+            raise BitableWriteError("Missing env for Bitable read: " + ", ".join(missing))
+        if not self._tenant_token:
+            self._tenant_token = self._fetch_tenant_token()
+        records: list[dict[str, Any]] = []
+        page_token = ""
+        while True:
+            suffix = f"?page_size={page_size}"
+            if page_token:
+                suffix += f"&page_token={page_token}"
+            data = self._request("GET", f"/bitable/v1/apps/{self.settings.bitable_app_token}/tables/{table_id}/records{suffix}")
+            if data.get("code") != 0:
+                raise BitableWriteError(f"Failed to read Bitable records: {data}")
+            body = data.get("data") or {}
+            records.extend((body.get("items") or []))
+            if not body.get("has_more"):
+                break
+            page_token = str(body.get("page_token") or "")
+            if not page_token:
+                break
+        return records
+
+    def write_records(self, table_id: str, rows: list[dict[str, Any]], *, dry_run: bool) -> dict[str, Any]:
+        if dry_run:
+            return {"dry_run": True, "records": rows}
+        missing = [
+            name
+            for name, value in {
+                "FEISHU_APP_ID": self.settings.app_id,
+                "FEISHU_APP_SECRET": self.settings.app_secret,
+                "FEISHU_BITABLE_APP_TOKEN": self.settings.bitable_app_token,
+                "table_id": table_id,
+            }.items()
+            if not value
+        ]
+        if missing:
+            raise BitableWriteError("Missing env for Bitable write: " + ", ".join(missing))
+        if not self._tenant_token:
+            self._tenant_token = self._fetch_tenant_token()
+        return self._write_records(table_id, rows)
+
+    def delete_records(self, table_id: str, record_ids: list[str], *, dry_run: bool) -> dict[str, Any]:
+        if dry_run:
+            return {"dry_run": True, "record_ids": record_ids}
+        missing = [
+            name
+            for name, value in {
+                "FEISHU_APP_ID": self.settings.app_id,
+                "FEISHU_APP_SECRET": self.settings.app_secret,
+                "FEISHU_BITABLE_APP_TOKEN": self.settings.bitable_app_token,
+                "table_id": table_id,
+            }.items()
+            if not value
+        ]
+        if missing:
+            raise BitableWriteError("Missing env for Bitable delete: " + ", ".join(missing))
+        if not self._tenant_token:
+            self._tenant_token = self._fetch_tenant_token()
+        deleted = []
+        for record_id in record_ids:
+            data = self._request("DELETE", f"/bitable/v1/apps/{self.settings.bitable_app_token}/tables/{table_id}/records/{record_id}")
+            if data.get("code") != 0:
+                raise BitableWriteError(f"Failed to delete Bitable record: {data}")
+            deleted.append(record_id)
+        return {"count": len(deleted), "deleted": deleted}
+
     def _fetch_tenant_token(self) -> str:
         data = self._request(
             "POST",

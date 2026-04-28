@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import argparse
 import sys
 import time
 import urllib.error
@@ -113,9 +114,15 @@ class Client:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="初始化小龙虾真实飞书多维表格")
+    parser.add_argument("--force-new", action="store_true", help="强制创建新的多维表格 app，避免复用旧表数据")
+    args = parser.parse_args()
+
     client = Client()
     app_token = os.environ.get("FEISHU_BITABLE_APP_TOKEN", "")
     created_app = False
+    if args.force_new:
+        app_token = ""
     if not app_token:
         app = client.request("POST", "/bitable/v1/apps", body={"name": f"小龙虾项目上下文管家_{int(time.time())}"})
         if app.get("code") != 0:
@@ -134,7 +141,7 @@ def main() -> int:
     created_tables = []
     reused_tables = []
     for env_name, spec in TABLES.items():
-        table_id = os.environ.get(env_name, "") or tables.get(spec["name"])
+        table_id = ("" if args.force_new else os.environ.get(env_name, "")) or tables.get(spec["name"])
         if table_id:
             env_updates[env_name] = table_id
             reused_tables.append({"name": spec["name"], "table_id": table_id})
